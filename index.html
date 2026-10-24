@@ -7,20 +7,23 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 html,body{height:100%;margin:0;background:#0b0d14;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;font-family:system-ui,sans-serif;color:#e8eefc}
 canvas{display:block;width:100%;height:100%}
 #ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0d14ee;text-align:center;padding:20px}
-button{font-size:18px;padding:12px 36px;border-radius:999px;border:0;background:#5ce1e6;color:#001;font-weight:700}
+button{font-size:18px;padding:12px 24px;border-radius:999px;border:0;background:#5ce1e6;color:#001;font-weight:700}
+button[data-d=a]{background:#c77dff}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 p,h2{margin:0}p{opacity:.8;font-size:14px;line-height:1.7}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="ov"><h2>RHYTHM PROTOTYPE</h2>
 <p>PC: D F G H J K<br>スマホ: レーンを直接タップ<br>水色=タップ / 橙の帯=長押し / ピンク=フリック(スワイプ) / 黄=ドラッグ(触れてればOK)<br>サビで画面が横向きに回る</p>
-<button>START</button></div>
+<div class="row"><button data-d="e">EASY</button><button data-d="n">NORMAL</button><button data-d="h">HARD</button><button data-d="a">APPEND</button></div></div>
 <script>
 const cv=document.getElementById('c'),g=cv.getContext('2d'),ov=document.getElementById('ov');
 let W,H,D,s=1;
 const rs=()=>{D=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D};
 addEventListener('resize',rs);rs();
-let LW=70,HW=210,la=[1,0,0];
-const BPM=128,BT=60/BPM,N=6,SP=620,BARS=32,KEYS='dfghjk',SC=[0,2,4,7,9,12];
+let LW=70,HW=210,la=[1,0,0],SP=620,DF;
+const DIFS={e:{sk:.35,od:0,dbl:0,dr:.08,fe:.08,js:1.5,sp:520},n:{sk:.2,od:.4,dbl:.15,dr:.12,fe:.15,js:1.25,sp:580},h:{sk:.04,od:.9,dbl:.6,dr:.2,fe:.3,js:1,sp:620},a:{sk:0,od:1,dbl:.85,dr:.26,fe:.5,js:.8,sp:700}};
+const BPM=128,BT=60/BPM,N=6,BARS=32,KEYS='dfghjk',SC=[0,2,4,7,9,12];
 const JN=['PERFECT','GREAT','GOOD','MISS'],JC=['#fff36b','#6bffb0','#6bb5ff','#ff6b8a'];
 let ac,t0,nb,notes,score,combo,maxc,cnt,fx,ang,tg,msg,msgT,press,ptrs=new Map,run=0,last=0;
 const now=()=>ac.currentTime-t0;
@@ -59,26 +62,26 @@ nb++}}
 // ---- chart ----
 function mk(){let sd=7;const r=()=>(sd=sd*16807%2147483647)/2147483647;const L=[],end=Array(N).fill(-1);let pl=2,sk=0,ph=0;const gap=x=>[48,60,80,92,112,124].some(m=>x>m*BT-1.05&&x<m*BT+1.15),fj=x=>[48,60,80,92,112,124].some(m=>x>m*BT&&x<m*BT+3.9);
 for(let i=16;i<BARS*8;i++){const t=i*BT/2,b=i>>3,ro=RT.some(q=>b>=q[0]&&b<q[1]),ch=!ro&&b>=3,sps=SPL.some(q=>b>=q[0]&&b<q[1]);
-if(i%2&&!(ch&&r()<.9))continue;if(r()<(ro?.55:.04))continue;
+if(i%2&&!(ch&&r()<DF.od))continue;if(r()<(ro?.6:DF.sk))continue;
 let l=-1;for(let a=0;a<4&&l<0;a++){const c=sps?(ph?0:3)+(r()*3|0):(pl+1+(r()*5|0))%N;if(t>end[c]+.1)l=c}if(l<0)continue;ph=l<3?1:0;
 const x=r();let k='t',d=0;if(x<.14&&i%2==0){k='h';d=BT*(1+(r()*2|0))}else if(x<.28)k='f';
-if(gap(t+d))continue;L.push({t,l,k,d,st:0,j:k!='h'&&!fj(t)&&r()<.3?[.22+r()*.1,40+r()*40]:0});end[l]=t+d;pl=l;if(!ro&&r()<.2){const n=4+(r()*3|0);let dr=r()<.5?1:-1,q=l;for(let m=1;m<=n;m++){const tt=(i+m)*BT/2;if(q+dr<0||q+dr>=N)dr=-dr;q+=dr;if(tt<=end[q]+.1||gap(tt))break;L.push({t:tt,l:q,k:'d',d:0,st:0,j:0});end[q]=tt}sk=i+n+1;pl=q}
-if(ch&&r()<.6){const l2=sps?(l<3?3:0)+(r()*3|0):(l+2+(r()*3|0))%N;if(l2!=l&&t>end[l2]+.1){L.push({t,l:l2,k:'t',d:0,st:0});end[l2]=t}}}
+if(gap(t+d))continue;L.push({t,l,k,d,st:0,j:k!='h'&&!fj(t)&&r()<DF.fe?[.22+r()*.1,40+r()*40]:0});end[l]=t+d;pl=l;if(!ro&&r()<DF.dr){const n=4+(r()*3|0);let dr=r()<.5?1:-1,q=l;for(let m=1;m<=n;m++){const tt=(i+m)*BT/2;if(q+dr<0||q+dr>=N)dr=-dr;q+=dr;if(tt<=end[q]+.1||gap(tt))break;L.push({t:tt,l:q,k:'d',d:0,st:0,j:0});end[q]=tt}sk=i+n+1;pl=q}
+if(ch&&r()<DF.dbl){const l2=sps?(l<3?3:0)+(r()*3|0):(l+2+(r()*3|0))%N;if(l2!=l&&t>end[l2]+.1){L.push({t,l:l2,k:'t',d:0,st:0});end[l2]=t}}}
 return L}
 
 // ---- judge ----
 const jo=(n,T)=>{if(!n.j)return 0;const d=n.t-T,[a,J]=n.j,u=d-a;return u<=0?-J*d/a:u<=.5?SP*u-J:SP*u-J-.35*SP*(u-.5)};
-const judge=d=>{d=Math.abs(d);return d<.045?0:d<.09?1:d<.13?2:3};
+const judge=d=>{d=Math.abs(d)/DF.js;return d<.045?0:d<.09?1:d<.13?2:3};
 function addJ(q,l,ln){if(q>2)combo=0;else{combo++;maxc=Math.max(maxc,combo);score+=[1000,700,400][q]+combo*2;hitSnd(l,q);fx.push({l,t:now(),c:JC[q],ln})}cnt[q]++;msg=q;msgT=now()}
 function hit(n,T){n.st=n.k=='h'?1:2;n.q=judge(n.t-T);addJ(n.q,n.l,n.ln)}
 function down(l,id){press[l]++;const T=now();let b=null;
-for(const n of notes)if(n.l==l&&n.k!='d'&&n.st==0&&Math.abs(n.t-T)<.13&&(!b||n.t<b.t))b=n;
+for(const n of notes)if(n.l==l&&n.k!='d'&&n.st==0&&Math.abs(n.t-T)<.13*DF.js&&(!b||n.t<b.t))b=n;
 if(!b)return null;if(b.k=='f'&&id!='k')return b;hit(b,T);return null}
 
 // ---- input ----
 function laneAt(px,py){const dx=(px-W/2)/s,dy=(py-H/2)/s,c=Math.cos(ang),n=Math.sin(ang);const x=dx*c+dy*n;return Math.max(0,Math.min(N-1,Math.floor((x+HW)/LW)))}
 addEventListener('pointerdown',e=>{if(!run)return;const l=laneAt(e.clientX,e.clientY);ptrs.set(e.pointerId,{l,x:e.clientX,y:e.clientY,p:down(l,'p')})});
-addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const l2=laneAt(e.clientX,e.clientY);if(l2!=p.l){press[p.l]=Math.max(0,press[p.l]-1);press[l2]++;p.l=l2}if(p.p&&Math.hypot(e.clientX-p.x,e.clientY-p.y)>22){if(p.p.st==0)hit(p.p,now());p.p=null}});
+addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const l2=laneAt(e.clientX,e.clientY);if(l2!=p.l){press[p.l]=Math.max(0,press[p.l]-1);press[l2]++;p.l=l2}if(p.p&&Math.hypot(e.clientX-p.x,e.clientY-p.y)>16){if(p.p.st==0)hit(p.p,now());p.p=null}});
 const up=e=>{const p=ptrs.get(e.pointerId);if(p){press[p.l]=Math.max(0,press[p.l]-1);ptrs.delete(e.pointerId)}};
 addEventListener('pointerup',up);addEventListener('pointercancel',up);
 addEventListener('keydown',e=>{if(!run||e.repeat)return;const l=KEYS.indexOf(e.key.toLowerCase());if(l>=0)down(l,'k')});
@@ -88,8 +91,8 @@ addEventListener('contextmenu',e=>e.preventDefault());
 // ---- update / draw ----
 function update(T,dt){
 for(const n of notes){
-if(n.k=='d'&&n.st==0&&press[n.l]>0&&T>=n.t-.04&&T<=n.t+.1){n.st=2;n.q=0;addJ(0,n.l,n.ln)}else if(n.st==0&&T>n.t+.13){n.st=3;addJ(3,n.l)}
-else if(n.st==1){if(T>=n.t+n.d){n.st=2;score+=300;hitSnd(n.l,1)}else if(!press[n.l]&&T<n.t+n.d-.12){n.st=3;combo=0;msg=3;msgT=T}}}
+if(n.k=='d'&&n.st==0&&press[n.l]>0&&T>=n.t-.08&&T<=n.t+.12){n.st=2;n.q=0;addJ(0,n.l,n.ln)}else if(n.st==0&&T>n.t+.13*DF.js){n.st=3;addJ(3,n.l)}
+else if(n.st==1){if(T>=n.t+n.d){n.st=2;score+=300;hitSnd(n.l,1)}else if(!press[n.l]&&T<n.t+n.d-.2){n.st=3;combo=0;msg=3;msgT=T}}}
 const b=(T+1)/(BT*4)|0;const P=Math.PI/2;tg=0;for(const q of RT)if(b>=q[0]&&b<q[1])tg=q[2]*P;
 ang+=(tg-ang)*Math.min(1,dt*4);}
 function draw(T){
@@ -118,7 +121,7 @@ if(combo>1){g.font='bold 40px system-ui';g.fillText(combo,W/2,72)}
 if(T-msgT<.5){g.fillStyle=JC[msg];g.font='bold 22px system-ui';g.fillText(JN[msg],W/2,102)}}
 function loop(ts){if(!run)return;requestAnimationFrame(loop);const dt=Math.min(.05,(ts-last)/1000||0);last=ts;const T=now();sched();update(T,dt);draw(T);
 if(T>notes[notes.length-1].t+2)fin()}
-function fin(){run=0;ov.style.display='flex';ov.innerHTML=`<h2>RESULT</h2><p>SCORE ${score}<br>MAX COMBO ${maxc}<br>${JN.map((j,i)=>j+' '+cnt[i]).join(' / ')}</p><button>RETRY</button>`}
-function start(){if(!ac){ac=new AudioContext();const c=ac.createDynamicsCompressor();c.connect(ac.destination);out=ac.createGain();out.gain.value=.8;out.connect(c);nbuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=nbuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}ac.resume();notes=mk();score=combo=maxc=0;cnt=[0,0,0,0];fx=[];ang=tg=0;la=[1,0,0];msg=0;msgT=-9;press=Array(N).fill(0);ptrs.clear();nb=0;t0=ac.currentTime+1.2;run=1;ov.style.display='none';requestAnimationFrame(loop)}
-ov.onclick=e=>{if(e.target.tagName=='BUTTON')start()};
+function fin(){run=0;ov.style.display='flex';ov.innerHTML=`<h2>RESULT</h2><p>SCORE ${score}<br>MAX COMBO ${maxc}<br>${JN.map((j,i)=>j+' '+cnt[i]).join(' / ')}</p><div class="row"><button data-d="e">EASY</button><button data-d="n">NORMAL</button><button data-d="h">HARD</button><button data-d="a">APPEND</button></div>`}
+function start(d){DF=DIFS[d||'n'];SP=DF.sp;if(!ac){ac=new AudioContext();const c=ac.createDynamicsCompressor();c.connect(ac.destination);out=ac.createGain();out.gain.value=.8;out.connect(c);nbuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=nbuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}ac.resume();notes=mk();score=combo=maxc=0;cnt=[0,0,0,0];fx=[];ang=tg=0;la=[1,0,0];msg=0;msgT=-9;press=Array(N).fill(0);ptrs.clear();nb=0;t0=ac.currentTime+1.2;run=1;ov.style.display='none';requestAnimationFrame(loop)}
+ov.onclick=e=>{if(e.target.dataset.d)start(e.target.dataset.d)};
 </script></body></html>
