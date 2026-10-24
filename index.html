@@ -14,16 +14,16 @@ p,h2{margin:0}p{opacity:.8;font-size:14px;line-height:1.7}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="ov"><h2>RHYTHM PROTOTYPE</h2>
-<p>PC: D F G H J K<br>スマホ: レーンを直接タップ<br>水色=タップ / 橙の帯=長押し / ピンク=フリック(スワイプ) / 黄=ドラッグ(触れてればOK)<br>サビで画面が横向きに回る</p>
+<p>PC: D F G H J K (8レーンは A S D F H J K L)<br>スマホ: レーンを直接タップ<br>水色=タップ / 橙の帯=長押し / ピンク=フリック(スワイプ) / 黄=ドラッグ(触れてればOK)<br>サビで画面が横向きに回る</p>
 <div class="row"><button data-d="e">EASY</button><button data-d="n">NORMAL</button><button data-d="h">HARD</button><button data-d="a">APPEND</button></div></div>
 <script>
 const cv=document.getElementById('c'),g=cv.getContext('2d'),ov=document.getElementById('ov');
 let W,H,D,s=1;
 const rs=()=>{D=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D};
 addEventListener('resize',rs);rs();
-let LW=70,HW=210,la=[1,0,0],SP=620,DF;
-const DIFS={e:{sk:.5,od:0,dbl:0,dr:.04,fe:0,js:1.8,sp:440,gm:0,fl:0,nb:1,tl:.4},n:{sk:.38,od:0,dbl:0,dr:.08,fe:0,js:1.5,sp:500,gm:1,fl:.06,nb:1,tl:.6},h:{sk:.28,od:.15,dbl:.08,dr:.1,fe:.08,js:1.35,sp:540,gm:1,fl:.1,nb:1,tl:.8},a:{sk:.15,od:.4,dbl:.2,dr:.14,fe:.18,js:1.15,sp:580,gm:1,fl:.14,nb:0,tl:1}};
-const BPM=128,BT=60/BPM,N=6,BARS=32,KEYS='dfghjk',SC=[0,2,4,7,9,12];
+let LW=70,HW=210,la=[1,0,0],SP=620,DF,N=6,KEYS='dfghjk';
+const DIFS={e:{n:6,sk:.5,od:0,dbl:0,dr:.04,fe:0,js:1.8,sp:440,gm:0,fl:0,nb:1,tl:.4},n:{n:8,sk:.42,od:0,dbl:0,dr:.06,fe:0,js:1.6,sp:490,gm:1,fl:.05,nb:1,tl:.5},h:{n:8,sk:.32,od:.1,dbl:.05,dr:.08,fe:.05,js:1.4,sp:530,gm:1,fl:.08,nb:1,tl:.7},a:{n:8,sk:.22,od:.25,dbl:.1,dr:.1,fe:.12,js:1.25,sp:560,gm:1,fl:.12,nb:0,tl:.9}};
+const BPM=128,BT=60/BPM,BARS=32,SC=[0,2,4,7,9,12,14,16];
 const JN=['PERFECT','GREAT','GOOD','MISS'],JC=['#fff36b','#6bffb0','#6bb5ff','#ff6b8a'];
 let ac,t0,nb,notes,score,combo,maxc,cnt,fx,ang,tg,msg,msgT,press,ptrs=new Map,run=0,last=0;
 const now=()=>ac.currentTime-t0;
@@ -88,10 +88,10 @@ function sched(){while(nb<BARS*8&&t0+nb*BT/2<ac.currentTime+.15){step(t0+nb*BT/2
 function mk(){let sd=7;const r=()=>(sd=sd*16807%2147483647)/2147483647;const L=[],end=Array(N).fill(-1);let pl=2,sk=0,ph=0;const gap=x=>DF.gm&&[48,60,80,92,112,124].some(m=>x>m*BT-1.05&&x<m*BT+1.15),fj=x=>DF.gm&&[48,60,80,92,112,124].some(m=>x>m*BT&&x<m*BT+3.9);
 for(let i=16;i<BARS*8;i++){const t=i*BT/2,b=i>>3,ro=DF.gm&&RT.some(q=>b>=q[0]&&b<q[1]),ch=!ro&&b>=3,sps=DF.gm&&SPL.some(q=>b>=q[0]&&b<q[1]);
 if(i%2&&!(ch&&r()<DF.od))continue;if(r()<(ro?.6:DF.sk))continue;
-let l=-1;for(let a=0;a<4&&l<0;a++){const c=sps?(ph?0:3)+(r()*3|0):DF.nb?Math.max(0,Math.min(N-1,pl+(r()*5|0)-2)):(pl+1+(r()*5|0))%N;if(t>end[c]+.1)l=c}if(l<0)continue;ph=l<3?1:0;
+let l=-1;for(let a=0;a<4&&l<0;a++){const c=sps?(ph?0:N/2)+(r()*(N/2)|0):DF.nb?Math.max(0,Math.min(N-1,pl+(r()*5|0)-2)):(pl+1+(r()*(N-1)|0))%N;if(t>end[c]+.1)l=c}if(l<0)continue;ph=l<N/2?1:0;
 const x=r();let k='t',d=0;if(x<.14&&i%2==0){k='h';d=BT*(1+(r()*2|0))}else if(x<.14+DF.fl)k='f';
 if(gap(t+d))continue;L.push({t,l,k,d,st:0,j:k!='h'&&!fj(t)&&r()<DF.fe?[.22+r()*.1,40+r()*40]:0});end[l]=t+d;pl=l;if(!ro&&r()<DF.dr){const n=4+(r()*3|0);let dr=r()<.5?1:-1,q=l;for(let m=1;m<=n;m++){const tt=(i+m)*BT/2;if(q+dr<0||q+dr>=N)dr=-dr;q+=dr;if(tt<=end[q]+.1||gap(tt))break;L.push({t:tt,l:q,k:'d',d:0,st:0,j:0});end[q]=tt}sk=i+n+1;pl=q}
-if(ch&&r()<DF.dbl){const l2=sps?(l<3?3:0)+(r()*3|0):(l+2+(r()*3|0))%N;if(l2!=l&&t>end[l2]+.1){L.push({t,l:l2,k:'t',d:0,st:0});end[l2]=t}}}
+if(ch&&r()<DF.dbl){const l2=sps?(l<N/2?N/2:0)+(r()*(N/2)|0):(l+2+(r()*3|0))%N;if(l2!=l&&t>end[l2]+.1){L.push({t,l:l2,k:'t',d:0,st:0});end[l2]=t}}}
 return L}
 
 // ---- judge ----
@@ -122,7 +122,7 @@ const b=(T+1)/(BT*4)|0;const P=Math.PI/2;tg=0;if(DF.gm)for(const q of RT)if(b>=q
 ang+=(tg-ang)*Math.min(1,dt*4);}
 function draw(T){
 g.setTransform(D,0,0,D,0,0);g.fillStyle='#0b0d14';g.fillRect(0,0,W,H);
-const ls=W>H,k=Math.abs(Math.sin(ang)),c=ls?1:k,vh=740-280*c;LW=ls?104:70;HW=LW*3;const fw=2*HW;s=Math.min(W/(fw+(vh-fw)*k),H/(vh-(vh-fw)*k));
+const ls=W>H,k=Math.abs(Math.sin(ang)),c=ls?1:k,vh=740-280*c;LW=(ls?624:420)/N;HW=LW*N/2;const fw=2*HW;s=Math.min(W/(fw+(vh-fw)*k),H/(vh-(vh-fw)*k));
 g.save();g.translate(W/2,H/2);g.scale(s,s);g.rotate(ang);g.translate(0,-100*c);
 for(let l=0;l<N;l++){g.fillStyle=press[l]>0?'#26405c':l%2?'#141a28':'#10151f';g.fillRect(-HW+l*LW,-370,LW,740)}
 g.strokeStyle='#2a3350';g.lineWidth=1;
@@ -147,6 +147,6 @@ if(T-msgT<.5){g.fillStyle=JC[msg];g.font='bold 22px system-ui';g.fillText(JN[msg
 function loop(ts){if(!run)return;requestAnimationFrame(loop);const dt=Math.min(.05,(ts-last)/1000||0);last=ts;const T=now();sched();update(T,dt);draw(T);
 if(T>notes[notes.length-1].t+2)fin()}
 function fin(){run=0;ov.style.display='flex';ov.innerHTML=`<h2>RESULT</h2><p>SCORE ${score}<br>MAX COMBO ${maxc}<br>${JN.map((j,i)=>j+' '+cnt[i]).join(' / ')}</p><div class="row"><button data-d="e">EASY</button><button data-d="n">NORMAL</button><button data-d="h">HARD</button><button data-d="a">APPEND</button></div>`}
-function start(d){DF=DIFS[d||'n'];SP=DF.sp;if(!ac){ac=new AudioContext();const c=ac.createDynamicsCompressor();c.connect(ac.destination);out=ac.createGain();out.gain.value=.8;out.connect(c);nbuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=nbuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}ac.resume();notes=mk();score=combo=maxc=0;cnt=[0,0,0,0];fx=[];ang=tg=0;la=[1,0,0];msg=0;msgT=-9;press=Array(N).fill(0);ptrs.clear();nb=0;t0=ac.currentTime+1.2;run=1;ov.style.display='none';requestAnimationFrame(loop)}
+function start(d){DF=DIFS[d||'n'];SP=DF.sp;N=DF.n;KEYS=N==8?'asdfhjkl':'dfghjk';if(!ac){ac=new AudioContext();const c=ac.createDynamicsCompressor();c.connect(ac.destination);out=ac.createGain();out.gain.value=.8;out.connect(c);nbuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=nbuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}ac.resume();notes=mk();score=combo=maxc=0;cnt=[0,0,0,0];fx=[];ang=tg=0;la=[1,0,0];msg=0;msgT=-9;press=Array(N).fill(0);ptrs.clear();nb=0;t0=ac.currentTime+1.2;run=1;ov.style.display='none';requestAnimationFrame(loop)}
 ov.onclick=e=>{if(e.target.dataset.d)start(e.target.dataset.d)};
 </script></body></html>
